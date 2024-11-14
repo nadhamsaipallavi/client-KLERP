@@ -1,35 +1,99 @@
-import React from 'react';
-import Navbar from './Navbar';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const Students = () => {
-    // Sample student details
-    const student = {
-        id: 1,
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        major: 'Computer Science',
-        year: 'Sophomore',
-        courses: ['CS101', 'CS102', 'CS201'],
-    };
 
-    return (
-        <div>
-           
-            <h2>Student Details</h2>
-            <Navbar />
-            <p><strong>ID:</strong> {student.id}</p>
-            <p><strong>Name:</strong> {student.name}</p>
-            <p><strong>Email:</strong> {student.email}</p>
-            <p><strong>Major:</strong> {student.major}</p>
-            <p><strong>Year:</strong> {student.year}</p>
-            <h3>Enrolled Courses:</h3>
-            <ul>
-                {student.courses.map((courseCode, index) => (
-                    <li key={index}>{courseCode}</li>
-                ))}
-            </ul>
-        </div>
-    );
-};
+function Students() {
+  const [students, setStudents] = useState([]);
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [grade, setGrade] = useState('');
+  const [editingId, setEditingId] = useState(null);
+
+  const API_URL = process.env.REACT_APP_API_URL;
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const response = await axios.get(API_URL);
+      setStudents(response.data);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  };
+
+  const saveStudent = async () => {
+    try {
+      const studentData = { name, age, grade };
+
+      if (editingId) {
+        await axios.put(`${API_URL}/${editingId}`, studentData);
+        setEditingId(null);
+      } else {
+        await axios.post(API_URL, studentData);
+      }
+
+      setName('');
+      setAge('');
+      setGrade('');
+      fetchStudents();
+    } catch (error) {
+      console.error("Error saving student:", error);
+    }
+  };
+
+  const deleteStudent = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/${id}`);
+      fetchStudents();
+    } catch (error) {
+      console.error("Error deleting student:", error);
+    }
+  };
+
+  const editStudent = (student) => {
+    setEditingId(student._id);
+    setName(student.name);
+    setAge(student.age);
+    setGrade(student.grade);
+  };
+
+  return (
+    <div>
+      <h2>Student List</h2>
+      <input 
+        placeholder="Name" 
+        value={name} 
+        onChange={(e) => setName(e.target.value)} 
+      />
+      <input 
+        placeholder="Age" 
+        type="number"
+        value={age} 
+        onChange={(e) => setAge(e.target.value)} 
+      />
+      <input 
+        placeholder="Grade" 
+        value={grade} 
+        onChange={(e) => setGrade(e.target.value)} 
+      />
+      <button onClick={saveStudent}>
+        {editingId ? "Update Student" : "Add Student"}
+      </button>
+      
+      <ul>
+        {students.map(student => (
+          <li key={student._id}>
+            {student.name} - Age: {student.age}, Grade: {student.grade}
+            <button onClick={() => editStudent(student)}>Edit</button>
+            <button onClick={() => deleteStudent(student._id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default Students;
